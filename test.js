@@ -17,11 +17,11 @@ let teamsInfo = (data) => {
 }
 
 let tweakData = (data) => {
-    console.log(data['stats'][0]['splits'][0]['stat'])
+    console.log(data['roster'].length)
 }
-fetch('https://statsapi.web.nhl.com/api/v1/people/8474564/stats?stats=careerPlayoffs')
+fetch('https://statsapi.web.nhl.com/api/v1/teams/4/roster')
     .then(jsonData => jsonData.json())
-    .then(data =>tweakData(data))
+    .then(data => tweakData(data))
 
 
 

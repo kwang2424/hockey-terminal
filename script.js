@@ -13,8 +13,39 @@ function teamsInfo(data) {
     }
     return {'team_names': names, 'team_abbs': abbs, 'rosters': rosters}
 }
+async function matchTeam(team) {
+    let obj;
 
-async function matchTeam(name, team) {
+    const res = await fetch('https://statsapi.web.nhl.com/api/v1/teams?expand=team.roster');
+
+    obj = await res.json();
+
+    let teams = teamsInfo(obj);
+    let abbs = teams['team_abbs'];
+    let names = teams['team_names'];
+    let ratio = names.length / abbs.length;
+
+    team = team.toLowerCase();
+    name = name.toLowerCase();
+
+    let index = -1;
+
+    for (let i=0; i<abbs.length; i++ ) {
+        if (abbs[i] == team) {
+            index = i;
+            break;
+        }
+        for (let j=0; j<ratio; j++) {
+            if (names[j + ratio * i] == team) {
+                index = i;
+                break;
+            }
+        }
+    }
+
+    return index;
+}
+async function matchTeamPlayer(name, team) {
     let obj;
 
     const res = await fetch('https://statsapi.web.nhl.com/api/v1/teams?expand=team.roster');
@@ -77,7 +108,7 @@ $('body').terminal({
                 this.push(function(team) {
                     name = name.replace(/\s/g, '');
                     last_name = last_name.replace(/\s/g, '');
-                    matchTeam(name + ' ' + last_name, team)
+                    matchTeamPlayer(name + ' ' + last_name, team)
                         .then((id) => {
                             name = toTitleCase(name);
                             last_name = toTitleCase(last_name);
@@ -111,16 +142,41 @@ $('body').terminal({
                 this.pop().pop().pop();
             }, {
             prompt: 'team: '
-        })
-        
-            
+        })  
         }, {
             prompt: 'last name: '
         })
     }, {
         prompt: 'first name: '
     })
-    }, 
+    },
+    team: function() {
+        this.push(function(team) {
+            matchTeam(team)
+            .then((id) => {
+                console.log(id);
+                fetch(`https://statsapi.web.nhl.com/api/v1/teams/${id}/roster`)
+                .then(res => res.json())
+                .then((data) => {
+                    console.log(data)
+                    let jersey_num;
+                    let position_abb;
+                    let name;
+                    
+                    for (let i=0; i<data['roster'].length; i++) {
+                        name = data['roster'][i]['person']['fullName']
+                        jersey_num = data['roster'][i]['jerseyNumber']
+                        position_abb = data['roster'][i]['position']['abbreviation']
+                        this.echo(`${position_abb} - ${name} - ${jersey_num}`)
+                    }
+
+                })}
+                )
+            this.pop();
+        }, {
+            prompt: 'team: '
+        })
+    } 
         
 }, {
     greetings: 'My First JavaScript Terminal\n'
