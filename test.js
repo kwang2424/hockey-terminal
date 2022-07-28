@@ -17,9 +17,9 @@ let teamsInfo = (data) => {
 }
 
 let tweakData = (data) => {
-    console.log(data['roster'].length)
+    console.log(data)
 }
-fetch('https://statsapi.web.nhl.com/api/v1/teams/4/roster')
+fetch('https://statsapi.web.nhl.com/api/v1/teams/')
     .then(jsonData => jsonData.json())
     .then(data => tweakData(data))
 

@@ -3,15 +3,17 @@ function teamsInfo(data) {
     let names = []
     let name_types = ['locationName', 'name', 'shortName', 'teamName']
     let rosters = []
+    let ids = []
     for (let i=0; i<data['teams'].length; i++) {
         abbs.push(data['teams'][i]['abbreviation'].toLowerCase());
         rosters.push(data['teams'][i]['roster']['roster']);
+        ids.push(data['teams'][i]['id']);
         for (let j=0; j<name_types.length; j++) {
             names.push(data['teams'][i][name_types[j]].toLowerCase());
             
         }
     }
-    return {'team_names': names, 'team_abbs': abbs, 'rosters': rosters}
+    return {'team_names': names, 'team_abbs': abbs, 'rosters': rosters, 'ids': ids}
 }
 async function matchTeam(team) {
     let obj;
@@ -24,20 +26,22 @@ async function matchTeam(team) {
     let abbs = teams['team_abbs'];
     let names = teams['team_names'];
     let ratio = names.length / abbs.length;
+    let ids = teams['ids'];
 
     team = team.toLowerCase();
-    name = name.toLowerCase();
 
     let index = -1;
-
+    // console.log(abbs)
     for (let i=0; i<abbs.length; i++ ) {
+        // console.log(abbs[i], team)
         if (abbs[i] == team) {
-            index = i;
+            index = ids[i];
             break;
         }
         for (let j=0; j<ratio; j++) {
             if (names[j + ratio * i] == team) {
-                index = i;
+                console.log(names[j+ratio*i])
+                index = ids[i];
                 break;
             }
         }
@@ -55,14 +59,16 @@ async function matchTeamPlayer(name, team) {
     let teams = teamsInfo(obj);
     let abbs = teams['team_abbs'];
     let names = teams['team_names'];
+    
     let ratio = names.length / abbs.length;
 
     team = team.toLowerCase();
     name = name.toLowerCase();
 
     let index = -1;
-
+    
     for (let i=0; i<abbs.length; i++ ) {
+        
         if (abbs[i] == team) {
             index = i;
             break;
@@ -74,7 +80,10 @@ async function matchTeamPlayer(name, team) {
             }
         }
     }
-    let id = 0;
+    if (index < 0) {
+        return new Error("No team match.")
+    }
+    let id = -1;
     let roster = teams['rosters'][index]
     for (let i=0; i<roster.length; i++) {
         console.log(roster[i]['person']['fullName']);
@@ -82,7 +91,9 @@ async function matchTeamPlayer(name, team) {
             id = roster[i]['person']['id'];
         }
     }
-
+    if (id < 0) {
+        return new Error("No player match.")
+    }
     return id;
 
 
@@ -112,10 +123,16 @@ $('body').terminal({
                         .then((id) => {
                             name = toTitleCase(name);
                             last_name = toTitleCase(last_name);
-                            this.echo('\n' + name + ' ' + last_name)
+                            
                             fetch(`https://statsapi.web.nhl.com/api/v1/people/${id}/stats?stats=careerRegularSeason`)
-                            .then(res => res.json())
+                            .then(res => {
+                                if (!res.ok) {
+                                    throw new Error("Player not found.")
+                                }
+                                return res.json()
+                            })
                             .then((data) => {
+                                this.echo('\n' + name + ' ' + last_name)
                                 this.echo('\nRegular Season Stats:')
                                 let keys = Object.keys(data['stats'][0]['splits'][0]['stat']);
                                 let key_ind;
@@ -125,8 +142,16 @@ $('body').terminal({
                                 }
                             
                             })
+                            .catch((err) => this.echo("\tPlayer or team not found."))
+                            
                             fetch(`https://statsapi.web.nhl.com/api/v1/people/${id}/stats?stats=careerPlayoffs`)
-                            .then(res => res.json())
+                            .then(res => {
+                                if (!res.ok) {
+                                    throw new Error("Player not found.")
+                                }
+                                return res.json()
+                            }
+                            )
                             .then((data) => {
                                 this.echo('\nPlayoff Stats:')
                                 let keys = Object.keys(data['stats'][0]['splits'][0]['stat']);
@@ -135,8 +160,10 @@ $('body').terminal({
                                     key_ind = keys[i]
                                     this.echo('\t' + key_ind + ': ' + data['stats'][0]['splits'][0]['stat'][key_ind]);
                                 }
+                                this.echo();
                             
                             })
+                            .catch((err) => this.echo("\tEither player not found or no playoff stats."))
                     });
 
                 this.pop().pop().pop();
@@ -150,8 +177,7 @@ $('body').terminal({
         prompt: 'first name: '
     })
     },
-    team: function() {
-        this.push(function(team) {
+    team: function(team) {
             matchTeam(team)
             .then((id) => {
                 console.log(id);
@@ -162,21 +188,19 @@ $('body').terminal({
                     let jersey_num;
                     let position_abb;
                     let name;
-                    
+                    this.echo('');
                     for (let i=0; i<data['roster'].length; i++) {
                         name = data['roster'][i]['person']['fullName']
                         jersey_num = data['roster'][i]['jerseyNumber']
+                        if (jersey_num == undefined) jersey_num = 'n/a';
                         position_abb = data['roster'][i]['position']['abbreviation']
-                        this.echo(`${position_abb} - ${name} - ${jersey_num}`)
+                        this.echo(`\t${position_abb} - ${name} - ${jersey_num}`)
                     }
+                    this.echo();
 
                 })}
                 )
-            this.pop();
-        }, {
-            prompt: 'team: '
-        })
-    } 
+        }
         
 }, {
     greetings: 'My First JavaScript Terminal\n'
