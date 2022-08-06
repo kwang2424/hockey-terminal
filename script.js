@@ -141,7 +141,6 @@ async function matchTeamPlayer(name, team) {
     // use team roster to try and match player
     let roster = teams['rosters'][index]
     for (let i=0; i<roster.length; i++) {
-        console.log(roster[i]['person']['fullName']);
         if (name == roster[i]['person']['fullName'].toLowerCase()) {
             id = roster[i]['person']['id'];
         }
@@ -481,6 +480,6 @@ $('body').terminal({
         this.echo('');
     }
 }, {
-    // greetings at top of terminal
+    // greetings at top of terminal 
     greetings: 'Welcome to Hockey Terminal\n'
 });
