@@ -19,9 +19,9 @@ let teamsInfo = (data) => {
 let tweakData = (data) => {
     console.log(data)
 }
-fetch('https://statsapi.web.nhl.com/api/v1/teams')
+fetch('https://statsapi.web.nhl.com/api/v1/divisions')
     .then(jsonData => jsonData.json())
-    .then(data => console.log(data['teams']))
+    .then(data => console.log(data))
 
 
 
